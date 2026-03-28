@@ -22,6 +22,8 @@ interface Props {
   theme: string | undefined;
   setTheme: (theme: string) => void;
   mounted: boolean;
+  graphView: "minimal" | "complex";
+  setGraphView: (v: "minimal" | "complex") => void;
 }
 
 export default function GraphHeader({
@@ -32,6 +34,8 @@ export default function GraphHeader({
   theme,
   setTheme,
   mounted,
+  graphView,
+  setGraphView,
 }: Props) {
   return (
     <header className="h-16 border-b border-border bg-card/70 backdrop-blur-2xl flex items-center justify-between px-6 z-[60] shrink-0 relative transition-all">
@@ -91,6 +95,29 @@ export default function GraphHeader({
         </div>
 
         <div className="flex items-center gap-3 border-l border-border pl-8">
+           <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border mr-2">
+            <button
+              onClick={() => setGraphView("minimal")}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                graphView === "minimal" 
+                  ? "bg-purple-600 text-white shadow-lg" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Minimal
+            </button>
+            <button
+              onClick={() => setGraphView("complex")}
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                graphView === "complex" 
+                  ? "bg-blue-600 text-white shadow-lg" 
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Complex
+            </button>
+          </div>
+
           <Tooltip>
             <TooltipTrigger asChild>
               <button

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useTheme } from "next-themes";
 
 import {
   Search,
@@ -18,14 +19,14 @@ import {
 } from "@/components/ui/tooltip";
 
 const nodeColors: Record<string, string> = {
-  folder: "#8b5cf6",
-  api: "#ef4444",
-  service: "#3b82f6",
-  database: "#10b981",
-  component: "#f59e0b",
-  route: "#06b6d4",
-  function: "#ec4899",
-  other: "#94a3b8",
+  folder: "#8B5CF6",
+  api: "#10B981",
+  service: "#3B82F6",
+  database: "#F59E0B",
+  component: "#EC4899",
+  route: "#10B981",
+  function: "#EC4899",
+  other: "#94A3B8",
 };
 
 interface Props {
@@ -51,6 +52,8 @@ export default function LeftSidebar({
   onClearSelection,
   selectedNodeId,
 }: Props) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [isEntryCollapsed, setIsEntryCollapsed] = useState(false);
   const entryNodes = nodes.filter(
     (n) => n.data?.type === "api" || n.data?.type === "route"
@@ -87,8 +90,12 @@ export default function LeftSidebar({
 
 
   return (
-    <aside className="w-[300px] border-r border-border bg-card/60 backdrop-blur-3xl flex flex-col z-50 overflow-hidden shadow-sm relative">
-      <div className="absolute inset-0 bg-gradient-to-r from-white/[0.02] to-transparent pointer-events-none" />
+    <aside className={`w-[300px] border-r border-border flex flex-col z-50 overflow-hidden shadow-sm relative transition-colors duration-300 ${
+      isDark ? "bg-card/60 backdrop-blur-3xl" : "bg-card/90 backdrop-blur-xl"
+    }`}>
+      <div className={`absolute inset-0 bg-gradient-to-r pointer-events-none ${
+        isDark ? "from-white/[0.02] to-transparent" : "from-black/[0.01] to-transparent"
+      }`} />
       
       {/* Entry Points */}
       <div className="p-6 border-b border-border">
@@ -138,7 +145,7 @@ export default function LeftSidebar({
                     title={`File: ${n.data?.label}\nType: ${n.data?.type || 'Unknown'}\nClick to view architecture routing.`}
                     className={`group w-full flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
                       selectedNodeId === n.id
-                        ? "bg-purple-500/10 border border-purple-500/30 ring-1 ring-purple-500/20 shadow-sm"
+                        ? (isDark ? "bg-purple-500/10 border border-purple-500/30 ring-1 ring-purple-500/20 shadow-sm" : "bg-purple-500/5 border border-purple-500/20 shadow-sm")
                         : "hover:bg-muted/80 border border-transparent hover:border-border/60 hover:shadow-sm"
                     }`}
                   >

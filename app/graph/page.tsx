@@ -1,40 +1,43 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useReactFlow, ReactFlowProvider } from "reactflow";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useReactFlow, ReactFlowProvider, ReactFlow, Background } from "reactflow";
 import "reactflow/dist/style.css";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Node } from "reactflow";
-
-
-
-
-const nodeColors = {
-  folder: "#8b5cf6",
-  api: "#ef4444",
-  service: "#3b82f6",
-  database: "#10b981",
-  component: "#f59e0b",
-  route: "#06b6d4",
-  function: "#ec4899",
-  other: "#94a3b8",
-};
-
-const nodeTypes = { custom: CustomNode };
-const edgeTypes = { default: HierarchyEdge };
-
-// import { WelcomeToast } from "@/components/ui/toast";
-import GraphCanvas from "@/components/graph/graphCanvas";
-import CustomNode from "@/components/graph/customGraph";
-import { HierarchyEdge } from "@/components/graph/heirarchyGraph";
+import MinimalNode from "@/components/graph/MinimalNode";
+import { useProgressiveGraph } from "@/hooks/useProgressiveGraph";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useGraph } from "@/hooks/useGraph";
-import getLayoutedElements from "@/components/graph/layout";
+
+// UI Components
 import GraphHeader from "@/components/graph/graphHeader";
-import SearchOverlay from "@/components/graph/searchOverlay";
 import LeftSidebar from "@/components/graph/leftSideBar";
 import NodeDetailsPanel from "@/components/graph/rightSideBar";
-import GraphToolbar from "@/components/graph/graphToolbar";
+import SearchOverlay from "@/components/graph/searchOverlay";
+import CustomNode from "@/components/graph/CustomNode";
+import HierarchyEdge from "@/components/graph/HierarchyEdge";
+
+// Constants
+const nodeTypes = { 
+  minimal: MinimalNode,
+  custom: CustomNode
+};
+
+const edgeTypes = {
+  hierarchy: HierarchyEdge
+};
+const nodeWidth = 250;
+const nodeHeight = 80;
+
+const nodeColors: Record<string, string> = {
+  folder: "#8B5CF6", // Violet
+  api: "#10B981",    // Emerald
+  service: "#3B82F6", // Blue
+  database: "#F59E0B", // Amber
+  component: "#EC4899", // Pink
+  route: "#10B981",    // Emerald
+  function: "#EC4899", // Pink
+  other: "#94A3B8",    // Slate
+};
 
 export default function GraphPageWrapper() {
   return (
@@ -49,163 +52,188 @@ export default function GraphPageWrapper() {
 function GraphPage() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+  const { fitView, setCenter } = useReactFlow();
+  
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isTracing, setIsTracing] = useState(false);
+  const [trackingNodeId, setTrackingNodeId] = useState<string | null>(null);
+  const [graphView, setGraphView] = useState<"minimal" | "complex">("minimal");
+  const [repoName, setRepoName] = useState("DEVSCOPE");
+  const lastFocusedId = useRef<string | null>(null);
+
+  const { 
+    nodes, 
+    edges, 
+    onNodesChange, 
+    onEdgesChange, 
+    initializeGraph, 
+    toggleNode,
+    setGraphView: setHookGraphView,
+    selectedNode,
+    setSelectedNode,
+    aiText,
+    aiLoading,
+    fetchAiSummary,
+    rawNodes,
+    rawEdges,
+    focusedNodeId,
+    setFocusedNodeId,
+    sequenceIndex,
+    nextSequence,
+    prevSequence,
+    totalSequence
+  } = useProgressiveGraph((id: string) => setTrackingNodeId(id));
 
   useEffect(() => {
     setMounted(true);
-
-
+    const savedData = localStorage.getItem("graphData");
+    if (!savedData) return;
+    
+    try {
+      const name = localStorage.getItem("repoName");
+      if (name) setRepoName(name.toUpperCase());
+      
+      const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedData);
+      if (savedNodes && savedEdges) {
+        initializeGraph(savedNodes, savedEdges);
+        setTimeout(() => fitView({ padding: 0.3, duration: 800 }), 300);
+      }
+    } catch (e) {
+      console.error("Failed to parse local storage graph data:", e);
+    }
   }, []);
-  const graph = useGraph();
 
-  const [isTracing, setIsTracing] = useState(false);
-  const [isAutoTracing, setIsAutoTracing] = useState(false);
-  const autoTraceRef = useRef(false);
-  const [traceIndex, setTraceIndex] = useState(-1);
+  const onNodeClick = (_: any, node: any) => {
+    setSelectedNode(node);
+    setTrackingNodeId(node.id); // Trigger surgical lock-on regardless of mode
+    if (graphView === "complex") {
+      setFocusedNodeId(node.id);
+    }
+  };
 
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const handleGraphViewChange = (view: "minimal" | "complex") => {
+    setGraphView(view);
+    setHookGraphView(view);
+    // Give layout a moment to settle before fitting
+    setTimeout(() => fitView({ padding: 0.3, duration: 1000 }), 100);
+  };
 
-  const router = useRouter();
-  const { setCenter, fitView } = useReactFlow();
-
-
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "k") {
         e.preventDefault();
-        setIsSearchOpen((prev) => !prev);
+        setIsSearchOpen(true);
       }
-      if (e.key === "Escape") setIsSearchOpen(false);
+      if (e.key === "Escape") {
+        setIsSearchOpen(false);
+        setSelectedNode(null);
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [setSelectedNode]);
 
   const filteredNodes = useMemo(() => {
     if (!searchQuery) return [];
-    return graph.nodes
-      .filter((n) =>
-        n.data.label.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-      .slice(0, 8);
-  }, [graph.nodes, searchQuery]);
+    return rawNodes.filter((n: any) =>
+      n.data?.label?.toLowerCase().includes(searchQuery.toLowerCase())
+    ).slice(0, 8);
+  }, [rawNodes, searchQuery]);
 
-
+  // Dedicated Pan/Focus Effect with surgical lock-on
   useEffect(() => {
-    const savedData = localStorage.getItem("graphData");
-    if (!savedData) return;
-
-    try {
-      const { nodes: savedNodes, edges: savedEdges } = JSON.parse(savedData);
-      if (!savedNodes || !savedEdges) return;
-
-      const uniqueNodes = Array.from(new Map(savedNodes.map((n: any) => [n.id, n])).values()) as any[];
-      const uniqueEdges = Array.from(new Map(savedEdges.map((e: any) => [`${e.source}-${e.target}-${e.label}`, e])).values()) as any[];
-
-      const { nodes: layoutedNodes, edges: layoutedEdges } =
-        getLayoutedElements(uniqueNodes, uniqueEdges);
-
-      const visiting = new Set<string>();
-
-      graph.setRawEdges(savedEdges);
-      graph.setNodes(layoutedNodes);
-      graph.setEdges(layoutedEdges);
-      graph.setHighlightedPath(visiting);
-
-      setTimeout(() => fitView({ duration: 1000, padding: 0.2 }), 300);
-    } catch (e) {
-      console.error("Error loading graph", e);
+    const focusTarget = focusedNodeId || trackingNodeId;
+    if (!focusTarget) {
+      lastFocusedId.current = null;
+      return;
     }
-  }, [fitView]);
+    
+    // Allow re-focus if it's a tracking event (expansion)
+    if (focusTarget === lastFocusedId.current && !trackingNodeId) return;
+    
+    const mainNode = nodes.find((n: any) => n.id === focusTarget);
+    if (mainNode) {
+        lastFocusedId.current = focusTarget;
+        
+        let targetNodes = [mainNode];
+        if (trackingNodeId) {
+            const children = edges
+                .filter((e: any) => e.source === trackingNodeId)
+                .map((e: any) => nodes.find((n: any) => n.id === e.target))
+                .filter((n: any) => n !== undefined) as any[];
+            targetNodes = [mainNode, ...children];
+        }
 
-  const flowColorMode = mounted
-    ? theme === "dark"
-      ? "dark"
-      : "light"
-    : undefined;
+        // --- SURGICAL LOCKDOWN: Cinematic Pan to reveal right-side expansion ---
+        const timer = setTimeout(() => {
+            fitView({
+                nodes: targetNodes,
+                duration: 1000,
+                padding: 0.5, // Increased padding to reveal context to the right
+                maxZoom: 1.1,
+            });
+        }, 50);
 
-  const dotColor = theme === "dark" ? "#334155" : "#cbd5e1";
+        if (trackingNodeId) {
+            const clearTimer = setTimeout(() => setTrackingNodeId(null), 1200);
+            return () => {
+                clearTimeout(timer);
+                clearTimeout(clearTimer);
+            };
+        }
+        return () => clearTimeout(timer);
+    }
+  }, [nodes, edges, trackingNodeId, focusedNodeId, fitView]);
 
-  const orderedFileNodes = useMemo(
-    () =>
-      [...graph.nodes]
-        .sort(
-          (a: Node<any>, b: Node<any>) =>
-            (((a.data as any)?.sequence ?? Number.MAX_SAFE_INTEGER) -
-              ((b.data as any)?.sequence ?? Number.MAX_SAFE_INTEGER)) ||
-            ((a.data as any)?.label || "").localeCompare((b.data as any)?.label || "")
-        ),
-    [graph.nodes]
-  );
+  // Auto-Play recursively expands the graph (Minimal) or steps through sequence (Complex)
+  useEffect(() => {
+    if (!isPlaying) return;
 
-  const focusNodeAt = (index: number) => {
-    if (index < 0 || index >= orderedFileNodes.length) return;
-    setTraceIndex(index);
-    const node = orderedFileNodes[index];
-    graph.focusNode(node as any, setCenter);
-  };
+    if (graphView === "complex") {
+        const timer = setTimeout(() => {
+            nextSequence();
+        }, 4000);
+        return () => clearTimeout(timer);
+    }
 
-  const playAllTrace = async () => {
-    if (isAutoTracing) {
-      autoTraceRef.current = false;
-      setIsAutoTracing(false);
+    const unexpanded = nodes.find((n: any) => n.data?.hasChildren && !n.data?.isExpanded);
+    
+    if (!unexpanded) {
+      setIsPlaying(false);
       return;
     }
 
-    if (orderedFileNodes.length === 0) return;
+    const timer = setTimeout(() => {
+      setTrackingNodeId(unexpanded.id);
+      toggleNode(unexpanded.id);
+    }, 4500);
 
-    autoTraceRef.current = true;
-    setIsAutoTracing(true);
-    for (let i = 0; i < orderedFileNodes.length; i++) {
-      if (!autoTraceRef.current) break;
-      focusNodeAt(i);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-    autoTraceRef.current = false;
-    setIsAutoTracing(false);
-  };
-
-  const goNextTrace = () => {
-    if (orderedFileNodes.length === 0) return;
-    const nextIndex = traceIndex < 0 ? 0 : Math.min(traceIndex + 1, orderedFileNodes.length - 1);
-    focusNodeAt(nextIndex);
-  };
-
-  const goPrevTrace = () => {
-    if (orderedFileNodes.length === 0) return;
-    const prevIndex = traceIndex < 0 ? 0 : Math.max(traceIndex - 1, 0);
-    focusNodeAt(prevIndex);
-  };
-
-  useEffect(() => {
-    if (!graph.selectedNode) return;
-    const idx = orderedFileNodes.findIndex((n) => n.id === graph.selectedNode?.id);
-    if (idx >= 0) setTraceIndex(idx);
-  }, [graph.selectedNode, orderedFileNodes]);
-
-  const [repoName, setRepoName] = useState("");
-
-  useEffect(() => {
-    const savedRepoName = localStorage.getItem("repoName");
-    if (savedRepoName) setRepoName(savedRepoName);
-  }, []);
+    return () => clearTimeout(timer);
+  }, [isPlaying, nodes, toggleNode, graphView, nextSequence]);
 
   return (
-    <div className="w-full h-screen bg-background flex flex-col overflow-hidden relative font-sans text-foreground transition-colors duration-500">
-
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_0%_0%,rgba(168,85,247,0.03),transparent_50%),radial-gradient(circle at 100% 100%,rgba(99,102,241,0.03),transparent_50%)]" />
-        <div className="absolute inset-0 opacity-[0.015] dark:opacity-[0.03] mix-blend-overlay pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
-      </div>
-
+    <div className="w-full h-screen bg-background flex flex-col relative font-sans text-foreground overflow-hidden">
+      
+      {/* Search Overlay */}
       <SearchOverlay
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         filteredNodes={filteredNodes}
-        onSelectNode={(node) => graph.onNodeClick(node, setCenter)}
+        onSelectNode={(node: any) => {
+          setSelectedNode(node);
+          const visibleNode = nodes.find((n: any) => n.id === node.id);
+          if (visibleNode) {
+            setCenter(visibleNode.position.x + nodeWidth/2, visibleNode.position.y + nodeHeight/2, { zoom: 0.8, duration: 800 });
+          }
+        }}
       />
+
       <GraphHeader
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -214,87 +242,172 @@ function GraphPage() {
         theme={theme}
         setTheme={setTheme}
         mounted={mounted}
+        graphView={graphView}
+        setGraphView={handleGraphViewChange}
       />
+
+      {/* Insight Bar */}
+      <div className="h-10 border-b border-border bg-muted/20 backdrop-blur-md flex items-center px-6 gap-6 z-50">
+        <div className="flex items-center gap-2">
+          <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-[9px] font-black text-emerald-600 tracking-tighter uppercase">
+            Global View
+          </div>
+          <span className="text-[10px] font-bold text-muted-foreground italic uppercase tracking-widest opacity-60">
+            Insight:
+          </span>
+          <span className="text-[10px] font-black text-foreground italic uppercase tracking-widest">
+            System-wide Architecture Overview
+          </span>
+        </div>
+      </div>
 
       <div className="flex-grow flex overflow-hidden">
         <LeftSidebar
-          nodes={graph.nodes}
-          edges={graph.edges}
-          activeRouteLabel={graph.activeRouteLabel}
-          onSelectNode={(node) => graph.onNodeClick(node, setCenter)}
-          onOpenSearch={() => setIsSearchOpen(true)}
-          onResetView={() => {
-            graph.setHighlightedPath(new Set());
-            graph.setActiveRouteLabel("");
-            fitView({ duration: 800 });
+          nodes={rawNodes}
+          edges={rawEdges}
+          activeRouteLabel={selectedNode?.data?.label || ""}
+          onSelectNode={(node: any) => {
+            setSelectedNode(node);
+            const visibleNode = nodes.find((n: any) => n.id === node.id);
+            if (visibleNode) {
+               setCenter(visibleNode.position.x + nodeWidth/2, visibleNode.position.y + nodeHeight / 2, { zoom: 0.8, duration: 800 });
+            }
           }}
+          onOpenSearch={() => setIsSearchOpen(true)}
+          onResetView={() => fitView({ duration: 800 })}
           onFitView={() => fitView({ duration: 800 })}
-          onClearSelection={() => graph.setSelectedNode(null)}
-          selectedNodeId={graph.selectedNode?.id}
+          onClearSelection={() => setSelectedNode(null)}
+          selectedNodeId={selectedNode?.id}
         />
 
-        <main className="flex-grow flex flex-col relative bg-background">
-          <GraphToolbar
-            activeRouteLabel={graph.activeRouteLabel}
-            selectedNode={graph.selectedNode}
-            isPlaying={isAutoTracing}
-            canGoPrev={traceIndex > 0}
-            canGoNext={orderedFileNodes.length > 0 && traceIndex < orderedFileNodes.length - 1}
-            traceProgressLabel={
-              orderedFileNodes.length === 0
-                ? "0 / 0"
-                : `${Math.max(traceIndex + 1, 0)} / ${orderedFileNodes.length}`
-            }
-            onNew={() => router.push("/")}
-            onReset={() => {
-              autoTraceRef.current = false;
-              setIsAutoTracing(false);
-              setTraceIndex(-1);
-              graph.setHighlightedPath(new Set());
-              graph.setActiveRouteLabel("");
-              fitView({ duration: 800 });
-            }}
-            onPlayAll={playAllTrace}
-            onPrev={goPrevTrace}
-            onNext={goNextTrace}
-          />
-          <GraphCanvas
-            graph={graph}
+        <main className="flex-grow flex flex-col relative bg-background border-r border-border/50">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onNodeClick={onNodeClick}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
-            flowColorMode={flowColorMode}
-            dotColor={dotColor}
-            setCenter={setCenter}
-            router={router}
-            repoName={repoName}
-          />
+            proOptions={{ hideAttribution: true }}
+            minZoom={0.05}
+            maxZoom={2}
+            className="z-10 bg-transparent"
+          >
+            <Background color={theme === "dark" ? "#334155" : "#e2e8f0"} gap={20} size={1} />
+            
+            {/* Cinematic Background Title & Watermark */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none overflow-hidden z-0">
+               <h1 className="text-[140px] font-black italic uppercase text-foreground/[0.03] dark:text-foreground/[0.07] tracking-[-0.08em] leading-none mb-2">
+                 {repoName.split('/').pop()}
+               </h1>
+               <div className="flex items-center gap-4 mt-[-10px]">
+                  <div className="h-[1px] w-20 bg-gradient-to-r from-transparent to-purple-500/20" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-purple-500/30">Architecture Blueprint</span>
+                  <div className="h-[1px] w-20 bg-gradient-to-l from-transparent to-purple-500/20" />
+              </div>
+            </div>
+
+            {/* ATMOSPHERIC LAYER 1: MESH GRADIENT */}
+            <div className="absolute inset-0 opacity-40 dark:opacity-20 pointer-events-none">
+              <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/20 blur-[120px]" />
+              <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/20 blur-[120px]" />
+            </div>
+
+            {/* ATMOSPHERIC LAYER 2: CENTER GLOW */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-500/[0.03] dark:bg-purple-500/[0.07] blur-[150px] rounded-full pointer-events-none" />
+          </ReactFlow>
+
+          {/* TRACE NAVIGATION OVERLAY (Complex Mode Only) */}
+          {graphView === "complex" && (
+            <div className="absolute top-6 right-6 z-50 flex items-center gap-3 bg-card/60 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-2xl">
+                <button 
+                  onClick={prevSequence}
+                  className="px-4 py-2 hover:bg-white/5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all"
+                >
+                  Prev
+                </button>
+                <div className="h-4 w-px bg-white/10" />
+                <button 
+                  onClick={nextSequence}
+                  className="px-4 py-2 hover:bg-white/5 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all"
+                >
+                  Next
+                </button>
+                <div className="h-4 w-px bg-white/10" />
+                <button 
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  className={`px-6 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all flex items-center gap-2
+                    ${isPlaying ? "bg-purple-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.4)]" : "bg-white/5 text-muted-foreground hover:bg-white/10 hover:text-foreground"}
+                  `}
+                >
+                  {isPlaying ? "Stop Trace" : "Play Trace"}
+                </button>
+                <div className="h-4 w-px bg-white/10" />
+                <div className="px-4 text-[11px] font-black tabular-nums tracking-tighter">
+                   <span className="text-purple-500">{sequenceIndex + 1}</span>
+                   <span className="opacity-30 mx-1">/</span>
+                   <span className="opacity-60">{totalSequence}</span>
+                </div>
+            </div>
+          )}
+
+          {/* Auto-Play Control Overlay (Minimal Only) */}
+          {graphView === "minimal" && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+             <button 
+                onClick={(e) => { e.stopPropagation(); setIsPlaying(!isPlaying); }}
+                className={`pointer-events-auto px-6 py-3 border rounded-2xl flex items-center gap-3 text-[11px] font-black tracking-widest uppercase transition-all shadow-xl bg-card/80 backdrop-blur-md
+                  ${isPlaying 
+                    ? "border-amber-500/50 text-amber-500 shadow-amber-500/10 animate-pulse" 
+                    : "border-blue-500/30 text-blue-500 hover:border-blue-500 hover:bg-blue-500/10"
+                  }
+                `}
+              >
+                <div className={`w-2 h-2 rounded-full ${isPlaying ? "bg-amber-500" : "bg-blue-500"}`} />
+                {isPlaying ? "Running Auto-Trace..." : "Start Auto-Trace Mode"}
+              </button>
+          </div>
+          )}
+
+          {graphView === "minimal" && !nodes.some((n: any) => n.data?.isExpanded) && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-8 py-4 bg-card/90 backdrop-blur-xl border border-blue-500/30 shadow-[0_0_50px_rgba(59,130,246,0.15)] rounded-3xl animate-bounce pointer-events-none text-sm font-black tracking-wider z-50 flex items-center gap-4">
+              <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,1)]" />
+              Click the Root Node to unroll your architecture
+            </div>
+          )}
         </main>
 
         <NodeDetailsPanel
-          selectedNode={graph.selectedNode}
-          edges={graph.edges}
-          nodes={graph.nodes}
+          selectedNode={selectedNode as any}
+          edges={rawEdges}
+          nodes={rawNodes}
           isTracing={isTracing}
-          aiText={graph.aiText}
-          aiLoading={graph.aiLoading}
-          onClose={() => graph.setSelectedNode(null)}
+          onClose={() => setSelectedNode(null)}
           onTrace={() => {
             setIsTracing(true);
             setTimeout(() => setIsTracing(false), 2000);
-
-            if (graph.selectedNode) {
-              graph.onNodeClick(graph.selectedNode, setCenter);
+            if (selectedNode) {
+              const visibleNode = nodes.find((n: any) => n.id === selectedNode.id);
+              if (visibleNode) {
+                setCenter(visibleNode.position.x + nodeWidth/2, visibleNode.position.y + nodeHeight/2, { zoom: 0.8, duration: 800 });
+              }
             }
           }}
-          onSelectNode={(node) => graph.onNodeClick(node, setCenter)}
+          onSelectNode={(node: any) => {
+             setSelectedNode(node);
+             const visibleNode = nodes.find((n: any) => n.id === node.id);
+             if (visibleNode) {
+               setCenter(visibleNode.position.x + nodeWidth/2, visibleNode.position.y + nodeHeight/2, { zoom: 0.8, duration: 800 });
+             }
+          }}
           onAskAI={() => {
-            if (graph.selectedNode) {
-              graph.fetchAiSummary(graph.selectedNode);
-            }
+            if (selectedNode) fetchAiSummary(selectedNode as any);
           }}
+          aiText={aiText}
+          aiLoading={aiLoading}
         />
       </div>
-
     </div>
   );
 }

@@ -21,19 +21,20 @@ export function useGraph(){
       const [aiText,    setAiText]    = useState("");
       const [aiLoading, setAiLoading] = useState(false);
 
-  const tracePath = useCallback((startId: string, edges: Edge[]) => {
+  const tracePath = useCallback((startId: string, edges: Edge[], maxDepth: number = Infinity) => {
     const visited = new Set<string>([startId]);
 
-    const dfs = (id: string) => {
+    const dfs = (id: string, currentDepth: number) => {
+      if (currentDepth >= maxDepth) return;
       edges.forEach((e) => {
         if (e.source === id && !visited.has(e.target)) {
           visited.add(e.target);
-          dfs(e.target);
+          dfs(e.target, currentDepth + 1);
         }
       });
     };
 
-    dfs(startId);
+    dfs(startId, 0);
     return visited;
   }, []);
 
@@ -130,6 +131,7 @@ export function useGraph(){
     focusNode,
     onNodeClick,
     fetchAiSummary,
+    tracePath,
     getStyledNodes,
     getStyledEdges,
   };

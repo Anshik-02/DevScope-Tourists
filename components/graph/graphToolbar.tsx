@@ -7,6 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { ViewMode, GraphModeSwitcher } from "./graphViewModes";
 
 interface Props {
   activeRouteLabel: string;
@@ -15,6 +16,8 @@ interface Props {
   canGoPrev: boolean;
   canGoNext: boolean;
   traceProgressLabel: string;
+  mode: ViewMode;
+  setMode: (val: ViewMode) => void;
 
   onNew: () => void;
   onReset: () => void;
@@ -30,6 +33,8 @@ export default function GraphToolbar({
   canGoPrev,
   canGoNext,
   traceProgressLabel,
+  mode,
+  setMode,
   onNew,
   onReset,
   onPlayAll,
@@ -41,19 +46,7 @@ export default function GraphToolbar({
 
       {/* LEFT */}
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-3">
-          {selectedNode ? (
-            <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-tighter text-amber-600">Trace Mode</span>
-            </div>
-          ) : (
-            <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-lg flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-              <span className="text-[10px] font-black uppercase tracking-tighter text-emerald-600">Global View</span>
-            </div>
-          )}
-        </div>
+        <GraphModeSwitcher mode={mode} setMode={setMode} />
 
         <div className="h-4 w-[1px] bg-border" />
 

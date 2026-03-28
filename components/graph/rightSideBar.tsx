@@ -1,4 +1,5 @@
 "use client";
+import { useTheme } from "next-themes";
 
 import {
   FileCode,
@@ -35,14 +36,14 @@ interface Props {
 }
 
 const nodeColors: Record<string, string> = {
-  folder: "#8b5cf6",
-  api: "#ef4444",
-  service: "#3b82f6",
-  database: "#10b981",
-  component: "#f59e0b",
-  route: "#06b6d4",
-  function: "#ec4899",
-  other: "#94a3b8",
+  folder: "#8B5CF6",
+  api: "#10B981",
+  service: "#3B82F6",
+  database: "#F59E0B",
+  component: "#EC4899",
+  route: "#10B981",
+  function: "#EC4899",
+  other: "#94A3B8",
 };
 
 export default function NodeDetailsPanel({
@@ -57,14 +58,21 @@ export default function NodeDetailsPanel({
   aiText,
   aiLoading,
 }: Props) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  
   if (!selectedNode) return null;
 
   const outboundEdges = edges.filter((e) => e.source === selectedNode.id);
   const color = nodeColors[selectedNode.data?.type] || "#888";
 
   return (
-    <aside className="w-[380px] bg-card/70 backdrop-blur-3xl border-l border-border flex flex-col z-50 shadow-2xl animate-in slide-in-from-right duration-500 relative">
-      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-purple-500/[0.05] to-transparent pointer-events-none" />
+    <aside className={`w-[380px] border-l border-border flex flex-col z-50 shadow-2xl animate-in slide-in-from-right duration-500 relative transition-colors duration-300 ${
+      isDark ? "bg-card/70 backdrop-blur-3xl" : "bg-card/95 backdrop-blur-xl"
+    }`}>
+      <div className={`absolute inset-x-0 top-0 h-32 bg-gradient-to-b pointer-events-none ${
+        isDark ? "from-purple-500/[0.05] to-transparent" : "from-purple-500/[0.08] to-transparent"
+      }`} />
 
       {/* ─── HEADER ─── */}
       <div className="p-6 border-b border-border flex justify-between items-center bg-muted/30 backdrop-blur-xl">
@@ -105,10 +113,14 @@ export default function NodeDetailsPanel({
             {selectedNode.data?.label}
           </h4>
 
-          <div className="p-5 bg-muted/40 rounded-3xl border border-border hover:border-purple-400/40 transition-all group relative overflow-hidden">
+          <div className={`p-5 rounded-3xl border transition-all group relative overflow-hidden ${
+            isDark ? "bg-muted/40 border-border hover:border-purple-400/40" : "bg-muted/20 border-border/60 hover:border-purple-400/30 shadow-sm"
+          }`}>
             
             {/* glow */}
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/20 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition" />
+            <div className={`absolute -top-10 -right-10 w-32 h-32 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition ${
+              isDark ? "bg-purple-500/20" : "bg-purple-500/10"
+            }`} />
 
             <div className="flex items-center gap-4 mb-3">
               <div
@@ -173,7 +185,9 @@ export default function NodeDetailsPanel({
                 <div
                   key={idx}
                   onClick={() => target && onSelectNode(target)}
-                  className="flex items-center justify-between p-4 bg-muted/30 rounded-2xl border border-border hover:border-purple-400 hover:bg-card transition-all cursor-pointer group"
+                  className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group ${
+                    isDark ? "bg-muted/30 border-border hover:border-purple-400 hover:bg-card" : "bg-muted/10 border-border/60 hover:border-purple-400/50 hover:bg-card hover:shadow-sm"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-muted rounded-xl flex items-center justify-center group-hover:bg-purple-500/10">

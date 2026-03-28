@@ -112,12 +112,12 @@ export default function GraphCanvas({
           size={1}
           style={{ opacity: 1 }}
         />
-        <Controls className="!shadow-none !bg-card/80 !backdrop-blur-xl !border-border !rounded-xl overflow-hidden" />
+        <Controls className="!bg-gradient-to-r !from-card/90 !to-card/70 !backdrop-blur-3xl !border-white/20 !border-opacity-50 !rounded-3xl !shadow-[0_25px_50px_rgba(0,0,0,0.3)] !p-3 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] transition-all duration-300 overflow-hidden" />
         <MiniMap
-          className="!bg-card/80 !backdrop-blur-xl !border-border !rounded-2xl !shadow-2xl"
+          className="!bg-gradient-to-br !from-card/95 !to-card/60 !backdrop-blur-3xl !border-white/30 !rounded-3xl !shadow-[0_20px_60px_rgba(0,0,0,0.4)] !p-4 hover:shadow-[0_0_40px_rgba(168,85,247,0.3)] transition-all duration-500"
           nodeColor={(node) => nodeColors[(node.data as any)?.type] || nodeColors.other}
-          maskColor="rgba(168, 85, 247, 0.05)"
-          ariaLabel="Architecture Overview Map"
+          maskColor="rgba(168, 85, 247, 0.1)"
+          ariaLabel="Neural Architecture Minimap"
         />
       </ReactFlow>
       </div>
