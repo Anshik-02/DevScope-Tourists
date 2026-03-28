@@ -200,7 +200,7 @@ export async function POST(req: Request) {
     try{
       const collection= await getCollection()
 
-      await Promise.allSettled(
+      await Promise.allSettled( 
         fileContent.map(async ({path,code})=>{
           const id=[`${path}-${code.slice(0,10)}`]
           const embedding= await getEmbeddings(code)

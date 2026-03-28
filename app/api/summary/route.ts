@@ -5,12 +5,15 @@ export async function POST(req: Request){
     const ai=new GoogleGenAI({
         apiKey:process.env.GEMINI_API_KEY!,
     })
-    const {code}=req.json() as any
+    const {code}=await req.json()
+    if(!code){
+        throw new Error("error")
+    }
     const res = await ai.models.generateContent({
         model:"gemini-2.5-flash",
         contents:[
             {
-                role:'User',
+                role:'user',
                 parts:[{
                     text:`You are an expert code analyst. Your job is to explain the code and break it down to the user. 
                             Answer by keeping these points in mind.
@@ -31,7 +34,7 @@ export async function POST(req: Request){
 }
 catch(e){
     console.error(e)
-    return NextResponse.json({message: "Something went wrong. Unable to generate the summary."})
+    return NextResponse.json({message: "Something went wrong. Unable to generate the summary."},{status:500})
 }
     
 }

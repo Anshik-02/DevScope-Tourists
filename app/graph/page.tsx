@@ -291,7 +291,7 @@ function GraphPage() {
           onSelectNode={(node) => graph.onNodeClick(node, setCenter)}
           onAskAI={() => {
             if (graph.selectedNode) {
-              graph.onNodeClick(graph.selectedNode, setCenter);
+              graph.fetchAiSummary(graph.selectedNode);
             }
           }}
         />

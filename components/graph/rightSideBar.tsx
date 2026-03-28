@@ -218,15 +218,20 @@ export default function NodeDetailsPanel({
       {/* FOOTER */}
       <div className="p-6 border-t border-border bg-muted/20">
         <div className="flex flex-col gap-3">
-          <button className="w-full py-3 bg-card border border-border rounded-xl text-[11px] font-black hover:bg-muted transition flex items-center justify-center gap-2">
-            <Cpu size={14} /> Ask AI about your query
-          </button>
+          {selectedNode.data?.type !== "folder" && (
+            <>
+              <button className="w-full py-3 bg-card border border-border rounded-xl text-[11px] font-black hover:bg-muted transition flex items-center justify-center gap-2">
+                <Cpu size={14} /> Ask AI about your query
+              </button>
 
-          <button
-            onClick={onAskAI}
-            className="w-full py-4 bg-purple-600 text-white rounded-xl text-[13px] font-black hover:bg-purple-700 transition flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
-          > AI Summary
-          </button>
+              <button
+                onClick={onAskAI}
+                className="w-full py-4 bg-purple-600 text-white rounded-xl text-[13px] font-black hover:bg-purple-700 transition flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
+              >
+                <Sparkles size={16} /> AI Summary
+              </button>
+            </>
+          )}
         </div>
       </div>
     </aside>

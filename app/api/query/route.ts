@@ -20,7 +20,7 @@ export const POST=async (req:Response)=>{
             return NextResponse.json({msg:"No relevant answers found"})
         }
         const ans= ai.models.generateContent({
-            model:'google-2.5-flash',
+            model:'gemini-2.5-flash',
             contents:[
                 {
                     role:'user',

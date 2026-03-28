@@ -55,18 +55,32 @@ export function useGraph(){
   );
 
   const onNodeClick = useCallback(
-    async (node: Node<NodeData>, setCenter?: any) => {
+    (node: Node<NodeData>, setCenter?: any) => {
       focusNode(node, setCenter);
-      setAiLoading(true);
-      const res = await fetch("/api/summary", {
-        method: "POST",
-        body: JSON.stringify({ code: node.data.code }),
-      });
-      const data = await res.json();
-      setAiText(data);
-      setAiLoading(false);
     },
     [focusNode]
+  );
+
+  const fetchAiSummary = useCallback(
+    async (node: Node<NodeData>) => {
+      if (!node.data.code) return;
+      setAiLoading(true);
+      setAiText("");
+      try {
+        const res = await fetch("/api/summary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: node.data.code }),
+        });
+        const data = await res.json();
+        setAiText(data.output || data.message || "No summary available.");
+      } catch (e) {
+        setAiText("Failed to generate summary. Please try again.");
+      } finally {
+        setAiLoading(false);
+      }
+    },
+    []
   );
          const getStyledNodes = () =>
     nodes.map((n) => ({
@@ -115,6 +129,7 @@ export function useGraph(){
 
     focusNode,
     onNodeClick,
+    fetchAiSummary,
     getStyledNodes,
     getStyledEdges,
   };

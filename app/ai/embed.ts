@@ -5,7 +5,7 @@ export async function getEmbeddings(text:string){
             apiKey: process.env.GEMINI_EMBED_API_KEY!
         })
         const res = await ai.models.embedContent({
-            model:"google-embedding-001",
+            model:"gemini-embedding-001",
             contents: text
         })
         const embedding= res.embeddings?.[0]?.values
