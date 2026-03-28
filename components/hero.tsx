@@ -1,19 +1,32 @@
 import React from "react";
+import { Sparkles } from "lucide-react";
 
 const Hero = () => {
   return (
-    <div className="flex flex-col items-center w-screen justify-center mt-10">
-      <p className="rounded-md border-2 w-90 text-center text-purple-800 text-xl">
-        Intelligence Powered Analysis Core
-      </p>
-      <div className="flex flex-wrap">
-        <h1 className="text-[90px] font-bold text-center  bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 text-transparent bg-clip-text">
+    <section className="relative overflow-hidden pt-32 pb-16 md:pt-48 md:pb-32">
+      {/* Background Aura */}
+      <div className="hero-aura absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] pointer-events-none -z-10 opacity-50" />
+      
+      <div className="mx-auto max-w-7xl px-6 lg:px-8 text-center">
+        <div className="mx-auto mb-8 flex max-w-fit items-center justify-center space-x-2 overflow-hidden rounded-full border border-border bg-accent/30 px-7 py-2 backdrop-blur hover:border-border/80 hover:bg-accent/50 transition-all">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold text-primary">
+            Intelligence Powered Analysis Core
+          </p>
+        </div>
+        
+        <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-7xl lg:text-8xl">
           MAP THE <br />
-          NEURAL NET
+          <span className="text-gradient-classy">NEURAL NET</span>
         </h1>
+        
+        <p className="mx-auto mt-8 max-w-2xl text-lg leading-8 text-muted-foreground sm:text-xl">
+          DevScope clarifies complex architecture into narrative driven, 
+          <br className="hidden sm:block" />
+          interactive execution maps in seconds.
+        </p>
       </div>
-      <p className="text-2xl text-center">DevScope clarifies complex architecture into narrative driven, <br />interactive execution maps in seconds </p>
-    </div>
+    </section>
   );
 };
 

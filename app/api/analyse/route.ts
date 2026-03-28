@@ -128,13 +128,35 @@ export async function POST(req: Request) {
   try {
     const { link } = await req.json();
 
-    const cleaned = link.replace(".git", "").replace("/\/$/", "");
+    if (!link || typeof link !== "string") {
+      return NextResponse.json({ error: "Invalid link provided" }, { status: 400 });
+    }
 
-    const parts = cleaned.split("/");
+    // Support both full GitHub URLs and bare "owner/repo" strings
+    let owner: string;
+    let repo: string;
 
-    const owner = parts[3];
+    const trimmed = link.trim().replace(/\.git$/, "").replace(/\/$/, "");
 
-    const repo = parts[4];
+    if (trimmed.includes("github.com")) {
+      // e.g. https://github.com/owner/repo
+      const url = new URL(trimmed.startsWith("http") ? trimmed : `https://${trimmed}`);
+      const pathParts = url.pathname.split("/").filter(Boolean);
+      owner = pathParts[0];
+      repo = pathParts[1];
+    } else {
+      // e.g. owner/repo
+      const parts = trimmed.split("/").filter(Boolean);
+      owner = parts[0];
+      repo = parts[1];
+    }
+
+    if (!owner || !repo) {
+      return NextResponse.json(
+        { error: "Could not parse owner/repo from the provided link. Use https://github.com/owner/repo format." },
+        { status: 400 }
+      );
+    }
 
     const baseURL = `https://api.github.com/repos/${owner}/${repo}/contents`;
 
@@ -318,25 +340,33 @@ export async function POST(req: Request) {
     });
 
 
-const {folderNodes,containmentEdges}=buildContainmentGraph(graphData.map((item)=>item.file))
+const { folderNodes, containmentEdges } = buildContainmentGraph(graphData.map((item) => item.file));
+
+// Deduplicate nodes by id - return array of node objects (not Map entries)
+const nodeMap = new Map<string, any>();
+[...folderNodes, ...nodes].forEach((n) => {
+  if (!nodeMap.has(n.id)) nodeMap.set(n.id, n);
+});
+const UniqueNodes = Array.from(nodeMap.values());
+
+// Deduplicate edges by source-target-label key
+const edgeMap = new Map<string, any>();
+[...containmentEdges, ...edges].forEach((e) => {
+  const key = `${e.source}-${e.target}-${e.label}`;
+  if (!edgeMap.has(key)) edgeMap.set(key, e);
+});
+const UniqueEdges = Array.from(edgeMap.values());
 
 
-const UniqueNodes=Array.from(
-    [...folderNodes,...nodes].map((e)=>[e.id,e]).values()
-)
-
-const UniqueEdges=Array.from(
-    [...containmentEdges,...edges].map((v)=>[
-        `${v.source}-${v.target}-${v.label}`,v
-    ]).values()
-)
 
 
 
-
-
-    return  NextResponse.json({nodes:UniqueNodes,edges:UniqueEdges});
+    return NextResponse.json({ nodes: UniqueNodes, edges: UniqueEdges });
   } catch (e) {
-    return new NextResponse("smasya");
+    console.error("[analyse] Unhandled error:", e);
+    return NextResponse.json(
+      { error: "Failed to analyse repository. Check the URL and try again." },
+      { status: 500 }
+    );
   }
 }
