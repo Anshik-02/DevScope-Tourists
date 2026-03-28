@@ -1,25 +1,14 @@
 import { ChromaClient } from "chromadb";
+const client = new ChromaClient({path: "https://chroma-latest-shb7.onrender.com"})
 
-const client= new ChromaClient({
-    auth:{
-        provider: "chroma",
-        credentials: process.env.CHROMA_API_KEY!,
-    },
-    tenant:process.env.CHROMA_TENT!,
-    database:process.env.CHROMA_DATABASE!
-})
+let _collection : Awaited<ReturnType<typeof client.getOrCreateCollection>> | null = null
+
 export async function getCollection(){
-    try{
-
-        const collection = await client.getOrCreateCollection(
-            {
-                name:"devscope",
-        embeddingFunction: undefined
+    if(!_collection){
+        _collection= await client.getOrCreateCollection({
+            name:"devscope",
+            embeddingFunction: undefined,
+        })
     }
-)
-return collection
-}
-catch (e){
-    console.error(e)
-}
+    return _collection
 }

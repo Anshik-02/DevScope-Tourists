@@ -95,30 +95,59 @@ export async function POST(req: Request) {
     const allData = await getAllfiles(baseURL);
     const codeFiles = allData.filter(f => /\.(py|ts|jsx|js|java|tsx)$/.test(f.name));
     const limitedFiles = codeFiles.slice(0, 50);
-
-    const fileContent = await Promise.all(limitedFiles.map(async (item) => {
-      const res = await fetch(item.download_url, {
-        headers: { Authorization: `token ${process.env.GITHUB_TOKEN}`, "User-Agent": "DevScope-App" },
-      });
-      return { path: item.path, code: await res.text() };
-    }));
-
-    // Embeddings Logic (CHROMA)
-    try {
-      const collection = await getCollection();
-      await Promise.allSettled(fileContent.map(async ({ path, code }) => {
-        const id = [`${path}-${code.slice(0, 10)}`];
-        const embedding = await getEmbeddings(code);
-        await collection?.upsert({
-          ids: id,
-          embeddings: [embedding],
-          documents: [code],
-          metadatas: [{ filePath: path, repository: `${owner}/${repo}` }]
+    const fileContent = await Promise.all(
+      limitedFiles.map(async (item) => {
+        const res = await fetch(item.download_url, {
+          headers: {
+            Authorization: `token ${process.env.GITHUB_TOKEN}`,
+            "User-Agent": "DevScope-App",
+          },
         });
-      }));
-    } catch (e) {
-      console.log("Embedding failed", e);
-    }
+        const code = await res.text();
+
+        return {
+          path: item.path,
+          code: code,
+        };
+      }),
+    );
+
+    // console.log(fileContent);
+
+    // //Send embeddings Need fix ****
+    try {
+  const collection = await getCollection();
+
+  // const repoName = "devscope"; 
+
+  await Promise.allSettled(
+    fileContent.map(async ({ path, code }, index) => {
+      const id = `${repo}-${path}-${index}`;
+
+      const embedding = await getEmbeddings(code);
+
+      await collection.upsert({
+        ids: [id],
+        documents: [code],
+        embeddings: [embedding],
+        metadatas: [
+          {
+            repo: repo,                      
+            path: path,                          
+            file: path.split("/").pop() as any,         
+            folder: path.split("/").slice(-2, -1)[0] || "", 
+            language: path.split(".").pop() as any,    
+            type: "code",                       
+            chunkIndex: index                   
+          },
+        ],
+      });
+    })
+  );
+} catch (e) {
+  console.log("Unable to embedd");
+  console.log(e);
+}
 
     const graphRaw = fileContent.map(item => {
       const parsed = parseFile(item.code, item.path);
