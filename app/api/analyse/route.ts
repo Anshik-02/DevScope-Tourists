@@ -1,3 +1,5 @@
+import { getCollection } from "@/app/ai/chromadb";
+import { getEmbeddings } from "@/app/ai/embed";
 import { parseFile } from "@/lib/astParser";
 import { NextResponse } from "next/server";
 
@@ -193,6 +195,28 @@ export async function POST(req: Request) {
     );
 
     console.log(fileContent);
+
+    //Send embeddings
+    try{
+      const collection= await getCollection()
+
+      await Promise.allSettled(
+        fileContent.map(async ({path,code})=>{
+          const id=[`${path}-${code.slice(0,10)}`]
+          const embedding= await getEmbeddings(code)
+          await collection?.upsert({
+            ids:id,
+            embeddings: [embedding],
+            documents: [code],
+            metadatas :[{filePath: path,repository : `${owner}/${repo}`}]
+          })
+        })
+      )
+    }
+    catch(e){
+      console.log("Unable to embedd")
+      console.log(e)
+    }
 
     const graphData: {
       file: string;
