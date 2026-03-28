@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     if (!code) {
       throw new Error("No code provided");
     }
+
     const res = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [

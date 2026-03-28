@@ -15,9 +15,9 @@ const Hero = () => {
           </p>
         </div>
         
-        <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-7xl lg:text-8xl">
-          MAP THE <br />
-          <span className="text-gradient-classy">NEURAL NET</span>
+        <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-6xl md:text-7xl lg:text-8xl flex flex-col items-center">
+          <span className="block">MAP THE</span>
+          <span className="text-gradient-classy mt-1 sm:mt-2">NEURAL NET</span>
         </h1>
         
         <p className="mx-auto mt-8 max-w-2xl text-lg leading-8 text-muted-foreground sm:text-xl">

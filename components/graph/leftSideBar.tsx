@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Network,
   Share2,
+  X,
 } from "lucide-react";
 import { Node, Edge } from "reactflow";
 import {
@@ -39,6 +40,8 @@ interface Props {
   onFitView: () => void;
   onClearSelection: () => void;
   selectedNodeId?: string;
+  isOpen?: boolean;
+  setIsOpen?: (v: boolean) => void;
 }
 
 export default function LeftSidebar({
@@ -51,6 +54,8 @@ export default function LeftSidebar({
   onFitView,
   onClearSelection,
   selectedNodeId,
+  isOpen,
+  setIsOpen,
 }: Props) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -90,13 +95,25 @@ export default function LeftSidebar({
 
 
   return (
-    <aside className={`w-[300px] border-r border-border flex flex-col z-50 overflow-hidden shadow-sm relative transition-colors duration-300 ${
-      isDark ? "bg-card/60 backdrop-blur-3xl" : "bg-card/90 backdrop-blur-xl"
+    <aside className={`fixed md:relative inset-y-0 left-0 w-[85%] sm:w-[320px] md:w-[300px] border-r border-border flex flex-col z-[80] md:z-50 overflow-hidden shadow-2xl md:shadow-sm transition-all duration-500 ease-in-out ${
+      isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+    } ${
+      isDark ? "bg-card/70 backdrop-blur-3xl" : "bg-card/95 backdrop-blur-2xl"
     }`}>
       <div className={`absolute inset-0 bg-gradient-to-r pointer-events-none ${
         isDark ? "from-white/[0.02] to-transparent" : "from-black/[0.01] to-transparent"
       }`} />
       
+      {/* Mobile Close Button */}
+      {setIsOpen && (
+        <button 
+          onClick={() => setIsOpen(false)}
+          className="absolute top-6 right-6 p-2 hover:bg-muted rounded-lg border border-border md:hidden z-[90]"
+        >
+          <X size={16} />
+        </button>
+      )}
+
       {/* Entry Points */}
       <div className="p-6 border-b border-border">
         <button

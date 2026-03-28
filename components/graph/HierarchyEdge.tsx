@@ -4,6 +4,7 @@ import {
   BaseEdge,
   EdgeProps,
   getSmoothStepPath,
+  getBezierPath,
   EdgeLabelRenderer,
 } from "reactflow";
 
@@ -15,11 +16,13 @@ export default function HierarchyEdge(props: EdgeProps) {
   } = props;
 
   const isHighlighted = (data as { highlighted?: boolean })?.highlighted;
+  const isVerticalJump = Math.abs(sourceX - targetX) < 150;
 
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
+  const getPath = isVerticalJump ? getSmoothStepPath : getBezierPath;
+  const [edgePath, labelX, labelY] = getPath({
     sourceX, sourceY, sourcePosition,
     targetX, targetY, targetPosition,
-    borderRadius: 24,
+    ...(isVerticalJump ? { borderRadius: 24 } : { curvature: 0.15 }),
   });
 
   return (
@@ -44,20 +47,33 @@ export default function HierarchyEdge(props: EdgeProps) {
       
       {/* Cinematic Data Pulse (Moving along the path) */}
       {isHighlighted && (
-        <path
-            d={edgePath}
-            fill="none"
-            stroke="white"
-            strokeWidth={3}
-            strokeLinecap="round"
-            style={{
-                strokeDasharray: '0.1, 40',
-                strokeDashoffset: 0,
-                opacity: 0.9,
-                filter: 'drop-shadow(0 0 10px white)',
-                animation: 'edgeFlow 2s linear infinite'
-            }}
-        />
+        <>
+            <path
+                d={edgePath}
+                fill="none"
+                stroke="rgba(34, 211, 238, 0.4)"
+                strokeWidth={6}
+                strokeLinecap="round"
+                style={{
+                    strokeDasharray: '20, 200',
+                    strokeDashoffset: 0,
+                    animation: 'edgeFlowPulse 2.5s linear infinite'
+                }}
+            />
+            <path
+                d={edgePath}
+                fill="none"
+                stroke="white"
+                strokeWidth={3}
+                strokeLinecap="round"
+                style={{
+                    strokeDasharray: '1, 100',
+                    strokeDashoffset: 0,
+                    filter: 'drop-shadow(0 0 8px #22d3ee)',
+                    animation: 'edgeFlowPulse 2.5s linear infinite'
+                }}
+            />
+        </>
       )}
 
       <EdgeLabelRenderer>

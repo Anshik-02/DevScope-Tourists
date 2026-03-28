@@ -5,6 +5,7 @@ import {
   Search,
   Sun,
   Moon,
+  History,
 } from "lucide-react";
 import {
   Tooltip,
@@ -24,6 +25,7 @@ interface Props {
   mounted: boolean;
   graphView: "minimal" | "complex";
   setGraphView: (v: "minimal" | "complex") => void;
+  onOpenHistory: () => void;
 }
 
 export default function GraphHeader({
@@ -36,6 +38,7 @@ export default function GraphHeader({
   mounted,
   graphView,
   setGraphView,
+  onOpenHistory,
 }: Props) {
   return (
     <header className="h-16 border-b border-border bg-card/70 backdrop-blur-2xl flex items-center justify-between px-6 z-[60] shrink-0 relative transition-all">
@@ -65,7 +68,7 @@ export default function GraphHeader({
               D
             </div>
 
-            <h1 className="text-lg font-black tracking-tighter italic uppercase  group-hover:opacity-80 transition-opacity">
+            <h1 className="text-lg font-black tracking-tighter italic uppercase group-hover:opacity-80 transition-opacity hidden sm:block">
               DevScope
             </h1>
           </div>
@@ -75,17 +78,15 @@ export default function GraphHeader({
 
 
 
-        <div className="h-7 px-3 bg-purple-500/10 border border-purple-500/20 rounded-full flex items-center gap-1.5 ml-2">
+        <div className="h-7 px-3 bg-purple-500/10 border border-purple-500/20 rounded-full hidden md:flex items-center gap-1.5 ml-2">
           <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
           <span className="text-[9px] font-black uppercase tracking-widest text-purple-600">Active Core</span>
         </div>
       </div>
 
 
-      <div className="flex items-center gap-8">
-        
-
-        <div className="flex items-center gap-4 text-[9px] font-black uppercase tracking-widest bg-muted px-4 py-2 rounded-full border border-border">
+      <div className="flex items-center gap-3 sm:gap-8">
+        <div className="hidden lg:flex items-center gap-4 text-[9px] font-black uppercase tracking-widest bg-muted px-4 py-2 rounded-full border border-border">
           {Object.entries(nodeColors).map(([t, c]) => (
             <div key={t} className="flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />
@@ -94,11 +95,11 @@ export default function GraphHeader({
           ))}
         </div>
 
-        <div className="flex items-center gap-3 border-l border-border pl-8">
-           <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border mr-2">
+        <div className="flex items-center gap-2 sm:gap-3 sm:border-l border-border sm:pl-8">
+           <div className="flex items-center bg-muted/50 p-1 rounded-xl border border-border">
             <button
               onClick={() => setGraphView("minimal")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+              className={`px-2 sm:px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all ${
                 graphView === "minimal" 
                   ? "bg-purple-600 text-white shadow-lg" 
                   : "text-muted-foreground hover:text-foreground"
@@ -108,7 +109,7 @@ export default function GraphHeader({
             </button>
             <button
               onClick={() => setGraphView("complex")}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+              className={`px-2 sm:px-3 py-1.5 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-wider transition-all ${
                 graphView === "complex" 
                   ? "bg-blue-600 text-white shadow-lg" 
                   : "text-muted-foreground hover:text-foreground"
@@ -117,6 +118,7 @@ export default function GraphHeader({
               Complex
             </button>
           </div>
+
 
           <Tooltip>
             <TooltipTrigger asChild>

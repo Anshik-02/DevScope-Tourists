@@ -33,6 +33,8 @@ interface Props {
 
   aiText: string;
   aiLoading: boolean;
+  isOpen?: boolean;
+  setIsOpen?: (v: boolean) => void;
 }
 
 const nodeColors: Record<string, string> = {
@@ -57,6 +59,8 @@ export default function NodeDetailsPanel({
   onAskAI,
   aiText,
   aiLoading,
+  isOpen,
+  setIsOpen,
 }: Props) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -67,8 +71,10 @@ export default function NodeDetailsPanel({
   const color = nodeColors[selectedNode.data?.type] || "#888";
 
   return (
-    <aside className={`w-[380px] border-l border-border flex flex-col z-50 shadow-2xl animate-in slide-in-from-right duration-500 relative transition-colors duration-300 ${
-      isDark ? "bg-card/70 backdrop-blur-3xl" : "bg-card/95 backdrop-blur-xl"
+    <aside className={`fixed md:relative inset-y-0 right-0 w-[90%] sm:w-[420px] md:w-[380px] border-l border-border flex flex-col z-[80] md:z-50 shadow-2xl md:shadow-sm transition-all duration-500 ease-in-out ${
+      isOpen ? "translate-x-0 opacity-100" : "translate-x-full md:translate-x-0 opacity-0 md:opacity-100"
+    } ${
+      isDark ? "bg-card/70 backdrop-blur-3xl" : "bg-card/95 backdrop-blur-2xl"
     }`}>
       <div className={`absolute inset-x-0 top-0 h-32 bg-gradient-to-b pointer-events-none ${
         isDark ? "from-purple-500/[0.05] to-transparent" : "from-purple-500/[0.08] to-transparent"
@@ -93,7 +99,10 @@ export default function NodeDetailsPanel({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                if (setIsOpen) setIsOpen(false);
+              }}
               className="p-2 hover:bg-muted rounded-xl transition"
             >
               <X size={18} />

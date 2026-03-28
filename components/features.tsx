@@ -88,7 +88,7 @@ const Features = () => {
             <div
               key={feat.title}
               className={`group relative overflow-hidden rounded-2xl border border-border/50 bg-accent/20 p-6 transition-all duration-300 hover:border-border hover:bg-accent/40 ${feat.glow} ${
-                feat.wide ? "md:col-span-2" : "md:col-span-1"
+                feat.wide ? "md:col-span-2" : "col-span-1"
               }`}
             >
               {/* Card gradient background */}

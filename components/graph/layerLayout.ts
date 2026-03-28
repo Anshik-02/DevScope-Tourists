@@ -1,9 +1,9 @@
 import { Edge, Node, Position } from "reactflow";
 
-const LAYER_WIDTH = 1200; // Increased spacing for 'Cinematic Breadth'
+const LAYER_WIDTH = 1400; // Cinematic Breadth for Sleek Bezier Paths
 const NODE_WIDTH = 520;
 const NODE_HEIGHT = 180;
-const VERTICAL_SPACING = 350;
+const VERTICAL_SPACING = 450;
 
 const LAYER_ORDER = ["folder", "api", "route", "component", "service", "function", "database", "other"];
 
