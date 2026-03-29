@@ -539,7 +539,7 @@ function GraphPage() {
 
             <div className="mt-8 p-6 bg-purple-500/5 rounded-2xl border border-purple-500/10">
                <p className="text-[9px] text-muted-foreground italic leading-relaxed">
-                 Graph states are automatically persisted to Supabase as you discover new architectural layers.
+                 Graph states are automatically persisted to your browser's local storage as you discover new architectural layers.
                </p>
             </div>
           </div>
